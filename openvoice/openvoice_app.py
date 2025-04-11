@@ -9,6 +9,7 @@ from openvoice.api import BaseSpeakerTTS, ToneColorConverter
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--share", action='store_true', default=False, help="make link public")
+parser.add_argument("--port", default=9096, help="set gradio port")
 args = parser.parse_args()
 
 en_ckpt_base = 'checkpoints/base_speakers/EN'
@@ -272,4 +273,4 @@ with gr.Blocks(analytics_enabled=False) as demo:
             tts_button.click(predict, [input_text_gr, style_gr, ref_gr, tos_gr], outputs=[out_text_gr, audio_gr, ref_audio_gr])
 
 demo.queue()  
-demo.launch(debug=True, show_api=True, share=args.share)
+demo.launch(debug=True, show_api=True, share=args.share, server_port=args.port)

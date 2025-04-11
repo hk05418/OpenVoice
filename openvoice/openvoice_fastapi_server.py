@@ -6,9 +6,10 @@ import torch
 import langid
 import uvicorn
 import shutil
+import io
 
 from fastapi import FastAPI, Form, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse, Response
 
 from openvoice import se_extractor
 from openvoice.api import BaseSpeakerTTS, ToneColorConverter
@@ -49,15 +50,9 @@ def OpenVoiceJSONResponse(code, err):
 
 @app.get("/clone_voice")
 @app.post("/clone_voice")
-async def clone_voice(ref_audio: UploadFile = File(None), style: str = Form("default"), tts_text: str = Form()):
-
-    # 1. 如果上传了 ref_audio，则保存到本地临时文件
-    if ref_audio:
-        ref_path = f"tmp/{ref_audio.filename}"
-        with open(ref_path, "wb") as f:
-            shutil.copyfileobj(ref_audio.file, f)
-    else:
-        ref_path = DEFAULT_REF_AUDIO
+# async def clone_voice(ref_audio: UploadFile = File(None), style: str = Form("default"), tts_text: str = Form()):
+# async def clone_voice(tts_text: str = Form(), style: str = Form("default")):
+async def clone_voice(tts_text, style="default"):
 
     #
     # first detect the input language
@@ -72,6 +67,7 @@ async def clone_voice(ref_audio: UploadFile = File(None), style: str = Form("def
         tts_model = zh_base_speaker_tts
         source_se = zh_source_se
         language = 'Chinese'
+
         if style not in ["default"]:
             result = JSONResponse(
                 status_code=400,
@@ -97,18 +93,37 @@ async def clone_voice(ref_audio: UploadFile = File(None), style: str = Form("def
             )
             return result
 
-        if len(tts_text) < 2 or len(tts_text) > 200:
-            return OpenVoiceJSONResponse(400, f"输入文本长度{len(tts_text)}, 文本要大于2个字符，并且小于200个字符")
+    if len(tts_text) < 2 or len(tts_text) > 200:
+        return OpenVoiceJSONResponse(400, f"输入文本长度{len(tts_text)}, 文本要大于2个字符，并且小于200个字符")
 
-        try:
-            target_se, audio_name = se_extractor.get_se(ref_path, tone_color_converter, target_dir='processed', vad=True)
-        except Exception as e:
-            return OpenVoiceJSONResponse(400, f"[ERROR] Get target tone color error {str(e)}")
+    try:
+        target_se, audio_name = se_extractor.get_se(DEFAULT_REF_AUDIO, tone_color_converter, target_dir='processed', vad=True)
+    except Exception as e:
+        return OpenVoiceJSONResponse(400, f"[ERROR] Get target tone color error {str(e)}")
 
-        # output_path 为None 时，返回音频数据
-        audio_data = tts_model.tts(tts_text, output_path=None, speaker=style, language=language)
+    # output_path 为None 时，返回音频数据
+    audio_data = tts_model.tts(tts_text, output_path=None, speaker=style, language=language)
+    # audio_io = io.BytesIO(audio_data)
+    # return StreamingResponse(audio_io, media_type="audio/mpeg")
+    # 1. 生成原始音频（临时保存）
 
-        return audio_data
+    temp_wav_path = os.path.join(output_dir, "temp.wav")
+    tts_model.tts(tts_text, output_path=temp_wav_path, speaker=style, language=language)
+
+    # 2. 使用 tone color converter 转换音色
+    converted_path = os.path.join(output_dir, "converted.wav")
+    tone_color_converter.convert(
+        audio_src_path=temp_wav_path,
+        src_se=source_se,
+        tgt_se=target_se,
+        output_path=converted_path
+    )
+
+    # 3. 返回转换后的音频数据
+    with open(converted_path, "rb") as f:
+        audio_bytes = f.read()
+
+    return Response(content=audio_bytes, media_type="audio/mpeg")
 
 
 if __name__ == "__main__":

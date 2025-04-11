@@ -15,8 +15,11 @@ def clone_voice_gradio(tts_text, style, ref_audio):
     try:
         response = requests.post(API_URL, data=data, files=files)
         if response.status_code == 200:
+            print("content: ", response.content)
+            print("content: ", response.text)
             return "语音合成成功", response.content
         else:
+            print("error: ", response.json())
             return f"[错误] {response.status_code}: {response.json().get('error')}", None
     except Exception as e:
         return f"[异常] {str(e)}", None
@@ -42,4 +45,4 @@ with gr.Blocks(title="OpenVoice 在线语音克隆") as demo:
     btn.click(fn=clone_voice_gradio, inputs=[tts_text, style, ref_audio], outputs=[status, output_audio])
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0", server_port=7860, debug=True)

@@ -5,6 +5,7 @@ import os
 import torch
 import langid
 import uvicorn
+import shutil
 
 from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -48,7 +49,15 @@ def OpenVoiceJSONResponse(code, err):
 
 @app.get("/clone_voice")
 @app.post("/clone_voice")
-async def clone_voice(ref_audio: UploadFile = File(DEFAULT_REF_AUDIO), style="default", tts_text: str = Form()):
+async def clone_voice(ref_audio: UploadFile = File(None), style: str = Form("default"), tts_text: str = Form()):
+
+    # 1. 如果上传了 ref_audio，则保存到本地临时文件
+    if ref_audio:
+        ref_path = f"tmp/{ref_audio.filename}"
+        with open(ref_path, "wb") as f:
+            shutil.copyfileobj(ref_audio.file, f)
+    else:
+        ref_path = DEFAULT_REF_AUDIO
 
     #
     # first detect the input language

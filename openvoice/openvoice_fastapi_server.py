@@ -7,6 +7,7 @@ import langid
 import uvicorn
 import shutil
 import io
+import tempfile
 
 from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import JSONResponse, StreamingResponse, Response
@@ -107,11 +108,13 @@ async def clone_voice(tts_text, style="default"):
     # return StreamingResponse(audio_io, media_type="audio/mpeg")
     # 1. 生成原始音频（临时保存）
 
-    temp_wav_path = os.path.join(output_dir, "temp.wav")
+    # temp_wav_path = os.path.join(output_dir, "temp.wav")
+    temp_wav_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
     tts_model.tts(tts_text, output_path=temp_wav_path, speaker=style, language=language)
 
     # 2. 使用 tone color converter 转换音色
-    converted_path = os.path.join(output_dir, "converted.wav")
+    tt_text_hex = tts_text.encode("utf-8").hex()  # 将文字 以十六进制编码后做为文件名
+    converted_path = os.path.join(output_dir, f"{tt_text_hex}.wav")
     tone_color_converter.convert(
         audio_src_path=temp_wav_path,
         src_se=source_se,

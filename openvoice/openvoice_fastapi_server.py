@@ -119,11 +119,18 @@ async def clone_voice(tts_text, style="default"):
         output_path=converted_path
     )
 
-    # 3. 返回转换后的音频数据
-    with open(converted_path, "rb") as f:
-        audio_bytes = f.read()
+    # # 3. 返回转换后的音频数据
+    # with open(converted_path, "rb") as f:
+    #     audio_bytes = f.read()
 
-    return Response(content=audio_bytes, media_type="audio/mpeg")
+    # return Response(content=audio_bytes, media_type="audio/mpeg")
+
+    # 流式返回
+    def iterfile():
+        with open(converted_path, "rb") as f:
+            while chunk := f.read(1024):
+                yield chunk
+    return StreamingResponse(iterfile(), media_type="audio/mpeg")
 
 
 if __name__ == "__main__":

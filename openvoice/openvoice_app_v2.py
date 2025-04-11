@@ -13,18 +13,18 @@ parser.add_argument("--host", type=str, default="0.0.0.0", help="host default 0.
 parser.add_argument("--port", type=int, default=9096, help="set gradio port")
 args = parser.parse_args()
 
-en_ckpt_base = 'checkpoints_v2/base_speakers/EN'
-zh_ckpt_base = 'checkpoints_v2/base_speakers/ZH'
+en_ckpt_base = 'checkpoints_v2/base_speakers/ses'
+zh_ckpt_base = 'checkpoints_v2/base_speakers/ses'
 ckpt_converter = 'checkpoints_v2/converter'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 output_dir = 'outputs'
 os.makedirs(output_dir, exist_ok=True)
 
 # load models
-en_base_speaker_tts = BaseSpeakerTTS(f'{en_ckpt_base}/config.json', device=device)
-en_base_speaker_tts.load_ckpt(f'{en_ckpt_base}/checkpoint.pth')
-zh_base_speaker_tts = BaseSpeakerTTS(f'{zh_ckpt_base}/config.json', device=device)
-zh_base_speaker_tts.load_ckpt(f'{zh_ckpt_base}/checkpoint.pth')
+en_base_speaker_tts = BaseSpeakerTTS(f'{en_ckpt_base}/config-en.json', device=device)
+en_base_speaker_tts.load_ckpt(f'{en_ckpt_base}/en-us.pth')
+zh_base_speaker_tts = BaseSpeakerTTS(f'{zh_ckpt_base}/config-zh.json', device=device)
+zh_base_speaker_tts.load_ckpt(f'{zh_ckpt_base}/zh.pth')
 tone_color_converter = ToneColorConverter(f'{ckpt_converter}/config.json', device=device)
 tone_color_converter.load_ckpt(f'{ckpt_converter}/checkpoint.pth')
 

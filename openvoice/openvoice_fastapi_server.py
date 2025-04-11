@@ -101,7 +101,7 @@ async def clone_voice(ref_audio: UploadFile = File(None), style: str = Form("def
             return OpenVoiceJSONResponse(400, f"输入文本长度{len(tts_text)}, 文本要大于2个字符，并且小于200个字符")
 
         try:
-            target_se, audio_name = se_extractor.get_se(ref_audio, tone_color_converter, target_dir='processed', vad=True)
+            target_se, audio_name = se_extractor.get_se(ref_path, tone_color_converter, target_dir='processed', vad=True)
         except Exception as e:
             return OpenVoiceJSONResponse(400, f"[ERROR] Get target tone color error {str(e)}")
 
